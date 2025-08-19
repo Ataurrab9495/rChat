@@ -1,0 +1,1 @@
+export const serverConnection = import.meta.env.VITE_SERVER_CONNECTION;
