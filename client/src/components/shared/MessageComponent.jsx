@@ -30,7 +30,7 @@ const MessageComponent = ({ message, user }) => {
                 content && <Typography>{content}</Typography>
             }
 
-            {attachments.length > 0 && 
+            {attachments.length > 0 &&
                 attachments.map((attachments, index) => {
                     const url = attachments.url;
                     const file = fileFormat(url);
@@ -42,7 +42,7 @@ const MessageComponent = ({ message, user }) => {
                                 target="_blank"
                                 download
                                 style={{
-                                    color: "black", 
+                                    color: "black",
                                 }}
                             >
                                 {RenderAttachment(file, url)}
@@ -51,6 +51,9 @@ const MessageComponent = ({ message, user }) => {
                     )
                 })
             }
+            <Typography variant="caption" color={"text.secondary"}>
+                {timeAgo}
+            </Typography>
         </div>
     )
 }
