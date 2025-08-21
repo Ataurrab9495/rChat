@@ -3,6 +3,7 @@ import React, { useRef } from 'react'
 import { grayColor, orange } from '../constants/Color';
 import { AttachFile as AttachFileIcon, Send as SendIcon} from '@mui/icons-material';
 import { InputBox } from '../components/styles/styledComponents';
+import AppLayout from '../components/Layout/AppLayout';
 
 const Chat = () => {
   const containerRef = useRef(null);
@@ -21,6 +22,7 @@ const Chat = () => {
         }}
       >
         {/* Chat messages will go here, Message will render here */}
+        asdgf
       </Stack>
       <form
         style={{
@@ -64,4 +66,4 @@ const Chat = () => {
   )
 }
 
-export default Chat
+export default AppLayout()(Chat)

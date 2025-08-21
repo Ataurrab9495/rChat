@@ -33,25 +33,28 @@ const newGroupChat = TryCatch(async (req, res, next) => {
 
 
 const getMyChats = TryCatch(async (req, res, next) => {
+    console.log(req.user);
+
     const chats = await Chat.find({ members: req.user }).populate(
         "members",
         "name avatar"
     );
 
-    console.log(chats);
-    
     const transformedChats = chats.map(({ _id, name, members, groupChat }) => {
         const otherMembers = getOtherMember(members, req.user);
 
         return {
             _id,
             groupChat,
-            avatar: groupChat ? members.slice(0, 3).map(({ avatar }) => avatar.url) : [otherMembers.avatar.url],
-            name: groupChat ? name : otherMembers.name,
+            avatar: groupChat
+                ? members.slice(0, 3).map(({ avatar }) => avatar.url)
+                : otherMembers && otherMembers.avatar ? [otherMembers.avatar.url] : [],
+            name: groupChat
+                ? name
+                : otherMembers ? otherMembers.name : "Unknown User",
             members: members.reduce((prev, curr) => {
                 if (curr._id.toString() !== req.user.toString())
                     prev.push(curr._id);
-
                 return prev;
             }, [])
         }
@@ -59,7 +62,7 @@ const getMyChats = TryCatch(async (req, res, next) => {
 
     return res.status(200).json({
         success: true,
-        chats: transformedChats,
+        chats: transformedChats
     })
 });
 
@@ -414,6 +417,8 @@ const getMessageDetails = TryCatch(async (req, res, next) => {
         totalPages,
     })
 });
+
+
 export {
     newGroupChat,
     getMyChats,
