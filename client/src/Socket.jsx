@@ -8,10 +8,15 @@ const SocketContext = createContext();
 const getSocket = () => useContext(SocketContext);
 
 const SocketProvider = ({ children }) => {
-    const socket = useMemo(() => io(serverConnection, {withCredentials: true}), []);
+    const socket = useMemo(() => io(serverConnection, {
+        timeout: 20000, // 20 seconds
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+        withCredentials: true
+    }), []);
 
     return (
-        <SocketContext.Provider value = {socket} >
+        <SocketContext.Provider value={socket} >
             {children}
         </SocketContext.Provider>
     );
