@@ -7,13 +7,16 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import { v4 as uuid } from "uuid";
 import cors from "cors";
-import {v2 as cloudinary} from "cloudinary";
+import { v2 as cloudinary } from "cloudinary";
 
 import userRoute from "./routes/user.routes.js";
 import chatRoute from "./routes/chat.routes.js";
 import adminRoute from "./routes/admin.routes.js";
 import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from "./constants/events.js";
 import { Message } from "./models/message.js";
+import { corsOptions } from "./constants/config.js";
+import { socketAuthentication } from "./middlewares/isAuthenticated.js";
+import { getSocketUserId } from "./library/helper.js";
 
 
 dotenv.config({
@@ -23,7 +26,7 @@ dotenv.config({
 connectDB(process.env.MONGO_URI);  // connection to database
 const port = process.env.PORT || 8000;
 export const AdminSeckey = process.env.ADMIN_SECRET_KEY;
-const userSocketIDs = new Map(); // to store user socket ids
+export const userSocketIDs = new Map(); // to store user socket ids
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -34,15 +37,14 @@ cloudinary.config({
 const app = express();
 const server = createServer(app);
 // socket.io server
-const io = new Server(server, {});
+const io = new Server(server, {
+    cors: corsOptions,
+});
 
 // using the middleware because we'll be using req.body and multer
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({
-    origin: ["http://localhost:5173",process.env.CLIENT_URL],
-    credentials: true,
-}));
+app.use(cors(corsOptions));
 
 // api's
 app.use('/api/v1/user', userRoute);
@@ -59,26 +61,29 @@ app.get("/", (req, res) => {
 
 
 // middleware to authenticate socket connection
-io.use((socket, next) => {});
+io.use((socket, next) => {
+    cookieParser()(
+        socket.request,
+        socket.request.res,
+        async (err) => await socketAuthentication(err, socket, next)
+    )
+});
 
 // socket.io connection
 io.on("connection", (socket) => {
-    console.log(`Socket connected: ${socket.id}`);
-
-    const user = {
-        _id: "At@123$#9495",
-        name: "Md Ataurrab",
-    }
+    socket.timeout(30000);
+    const user = socket.user; // get user from socket auth
+    
     // const user = socket.handshake.auth.user; // get user from socket handshake auth
     userSocketIDs.set(user._id.toString(), socket.id); // store user socket id
-
-    console.log(userSocketIDs);
+    //dconsole.log(userSocketIDs);
 
     // emit the user id to the client
     socket.on(NEW_MESSAGE, async ({ chatId, members, message }) => {
         // check if the chatId and members are provided
         const messageForRealTime = {
             content: message,
+            members,
             _id: uuid(),
             sender: {
                 _id: user._id,
@@ -97,10 +102,40 @@ io.on("connection", (socket) => {
         const userSocket = getSocketUserId(members); // get socket ids of the members
 
         // emit the message to the user who sent it
-        io.to(userSocket).emit(NEW_MESSAGE, {
-            chatId,
-            message: messageForRealTime,
-        });
+        userSocket.forEach(socketId => {
+            if(!socketId){
+                console.log('skip: socketId undefined for some member');
+                return;                
+            }
+
+            console.log(`emitting NEW_MESSAGE to socket ${socketId}`, { chatId, content: messageForRealTime.content });
+
+
+            io.to(userSocket).emit(NEW_MESSAGE, {
+                chatId,
+                message: messageForRealTime,
+            }, (ack) => {
+               console.log("Message delivered to sender:", ack);
+               
+            });
+        })
+
+         console.log(`Message broadcast to sockets: ${userSocket}`);
+         /* userSocket.forEach(socketId => {
+            const targetSocket = io.sockets.sockets.get(socketId);
+            if(targetSocket?.connected){
+                targetSocket.emit(NEW_MESSAGE, {
+                    chatId,
+                    message: messageForRealTime,
+                }, (ack) => {
+                    console.log("Message delivered to sender:", ack);
+                })
+            }else{
+                console.log(`Socket with ID ${socketId} is not connected`);
+                
+            }
+         }) */
+         
 
         // emit alert to the user that a new message has been sent (Notification)
         io.to(userSocket).emit(NEW_MESSAGE_ALERT, { chatId });
@@ -109,17 +144,17 @@ io.on("connection", (socket) => {
         try {
             await Message.create(messageForDB); // save the message to the database
         } catch (error) {
-            console.log(`Error saving message to database: ${error.message}`);  
+            console.log(`Error saving message to database: ${error.message}`);
         }
 
 
         // emit the message to the other members of the chat
-        console.log(messageForRealTime);
+        //console.log(messageForRealTime);
 
     });
 
     socket.on("disconnect", () => {
-        console.log(`Socket disconnected: ${socket.id}`);
+        //console.log(`Socket disconnected: ${socket.id}`);
         userSocketIDs.delete(user._id.toString()); // remove user socket id on disconnect
     })
 });

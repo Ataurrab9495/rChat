@@ -1,15 +1,15 @@
-import React from 'react'
-import Header from './Header'
-import Title from '../shared/Title'
+import { Drawer, Skeleton } from '@mui/material'
 import Grid from '@mui/material/Grid'
+import { useDispatch, useSelector } from 'react-redux'
+import { useParams } from 'react-router-dom'
+import { useErrors } from '../../hooks/hooks'
+import { useMyChatsQuery } from '../../Redux/api/api'
+import { setIsMobileMenuFriend } from '../../Redux/Reducers/misc'
+import Title from '../shared/Title'
 import ChatList from '../specific/ChatList'
 import Profile from '../specific/Profile'
-import { useParams } from 'react-router-dom'
-import { useMyChatsQuery } from '../../Redux/api/api'
-import { Drawer, Skeleton } from '@mui/material'
-import { useDispatch, useSelector } from 'react-redux'
-import { setIsMobileMenuFriend } from '../../Redux/Reducers/misc'
-import { useErrors } from '../../hooks/hooks'
+import Header from './Header';
+import { getSocket } from '../../Socket';
 
 const AppLayout = () => (WrappedComponent) => {
     return (props) => {
@@ -17,15 +17,12 @@ const AppLayout = () => (WrappedComponent) => {
         const params = useParams();
         const chatId = params.chatId;
 
-        const { isMobileMenuFriend } = useSelector(state => state.misc);
-        const {user} = useSelector(state => state.auth);
+        const socket = getSocket();
 
-        console.log(isMobileMenuFriend);
+        const { isMobileMenuFriend } = useSelector(state => state.misc);
+        const {user} = useSelector(state => state.auth);   
 
         const { isLoading, data, isError, error, refetch } = useMyChatsQuery("");
-
-        console.log(data);
-
 
         useErrors([{ isError, error }]);
 
@@ -75,7 +72,7 @@ const AppLayout = () => (WrappedComponent) => {
                         )}
                     </Grid>
                     <Grid size={{ xs: 12, sm: 8, md: 5, lg: 6 }} height={"100%"}>
-                        <WrappedComponent {...props} chatId={chatId} user={user}/>
+                        <WrappedComponent {...props} chatId={chatId}/>
                     </Grid>
                     <Grid
                         size={{ md: 4, lg: 3 }}
@@ -94,4 +91,4 @@ const AppLayout = () => (WrappedComponent) => {
     }
 }
 
-export default AppLayout
+export default AppLayout;

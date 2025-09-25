@@ -32,7 +32,6 @@ const Header = () => {
 
   const handleMobile = () => {
     dispatch(setIsMobileMenuFriend(true));
-    console.log("yes i am here"); 
   }
 
   const openSearchDialog = () => {
