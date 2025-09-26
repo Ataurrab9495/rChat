@@ -16,88 +16,43 @@ const Chat = ({ chatId }) => {
   const [messages, setMessages] = useState([]);
   const containerRef = useRef(null);
   const socket = getSocket();
-
-
-
+  const { user } = useSelector(state => state.auth);
 
   const chatDetails = useChatDetailsQuery({ chatId, skip: !chatId });
   const members = chatDetails.data?.chat?.members;
-
-
 
   const messageSubmitHandler = (e) => {
     e.preventDefault();
     if (!message.trim()) return;
 
-    console.log("data has been emitted from here...");
+    console.log("Emitting message:", { chatId, members, message });
     
     // Sending message to the server
     socket.emit(NEW_MESSAGE, { chatId, members, message });
     setMessage("");
   };
 
-  useEffect(() => {
-    console.log("this is so good");
+  const newMessageHandler = useCallback((data) => {
+    console.log("New message received:", data);
     
-    const testHandler = (data, ack) => {
-      console.log("Message received in chat page:- ", data);
-      console.log("acknowledgment from server:- ", typeof ack);
-      if(ack){
-        ack("Message received at client")
-      }
-    };
-
-    socket.on(NEW_MESSAGE, testHandler);
-    return () => {
-      socket.off(NEW_MESSAGE, testHandler);
+    if (data.chatId !== chatId) {
+      console.log("Message not for current chat, ignoring");
+      return;
     }
-  },[socket]);
-  
+    
+    setMessages((prev) => [...prev, data.message]);
+  }, [chatId]);
 
-  /* const newMessageHandler = useCallback((data, ack) => {
-    console.log(data);
-    try {
-      if (ack) {
-        ack({
-          status: "received",
-          message: data,
-          timestamp: Date.now()
-        })
-      }
-    } catch (err) {
-      console.error("Error processing message:", err);
-      if (ack) {
-        ack({
-          status: "error",
-          error: err.message
-        });
-      }
-    }
-  }, []); */
-
-  // const eventHandler = { [NEW_MESSAGE]: newMessageHandler };
-
-  /* useEffect(() => {
-    console.log("Socket in chat page:- ",socket);
+  useEffect(() => {
+    console.log("Setting up socket listeners");
     
     socket.on(NEW_MESSAGE, newMessageHandler);
 
-     return () => {
-      socket.off(NEW_MESSAGE, newMessageHandler); // Clean up the event listener on unmount
+    return () => {
+      console.log("Cleaning up socket listeners");
+      socket.off(NEW_MESSAGE, newMessageHandler);
     }
-  },[]) */
-
-  //useCallback:- will return a memoized version of the callback that only changes if one of the inputs has changed.
-  /* const newMessageHandler = useCallback((data) => {
-    setMessages((prev) => [...prev, data.message]); 
-    console.log("hii i am here");
-  },[]); */
-
-  //const eventHandler = {[NEW_MESSAGE]: newMessageHandler};
-
-
-  // Use the socket events hook to handle the NEW_MESSAGE event
-  //useSocketEventHandler(socket, eventHandler);
+  }, [socket, newMessageHandler]);
 
   return chatDetails.isLoading ? (
     <Skeleton />
