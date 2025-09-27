@@ -74,12 +74,16 @@ io.on("connection", (socket) => {
     socket.timeout(30000);
     const user = socket.user; // get user from socket auth
     
+    console.log(`User connected: ${user.name} (${user._id})`);
+    
     // const user = socket.handshake.auth.user; // get user from socket handshake auth
     userSocketIDs.set(user._id.toString(), socket.id); // store user socket id
-    //dconsole.log(userSocketIDs);
+    console.log(`Current connected users: ${userSocketIDs.size}`);
 
     // emit the user id to the client
     socket.on(NEW_MESSAGE, async ({ chatId, members, message }) => {
+        console.log(`Received NEW_MESSAGE from ${user.name}:`, { chatId, members, message });
+        
         // check if the chatId and members are provided
         if (!chatId || !members || !message) {
             console.log('Missing required fields:', { chatId, members, message });
@@ -105,6 +109,7 @@ io.on("connection", (socket) => {
 
         const userSocket = getSocketUserId(members); // get socket ids of the members
         console.log('User sockets found:', userSocket);
+        console.log('Members to notify:', members);
 
         // emit the message to all members of the chat
         userSocket.forEach(socketId => {
@@ -134,13 +139,14 @@ io.on("connection", (socket) => {
             await Message.create(messageForDB); // save the message to the database
             console.log('Message saved to database successfully');
         } catch (error) {
-            console.log(`Error saving message to database: ${error.message}`);
+            console.error(`Error saving message to database: ${error.message}`);
         }
     });
 
     socket.on("disconnect", () => {
         console.log(`Socket disconnected: ${socket.id}`);
         userSocketIDs.delete(user._id.toString()); // remove user socket id on disconnect
+        console.log(`Remaining connected users: ${userSocketIDs.size}`);
     })
 });
 

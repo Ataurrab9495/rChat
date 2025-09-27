@@ -13,7 +13,7 @@ const connectDB = (uri) => {
 };
 
 const sendToken = (res, user, code, message) => {
-    const token = jwt.sign({ _id: user._id }, "process.env.JWT_SECRETKEY");
+    const token = jwt.sign({ _id: user._id }, process.env.JWT_TOKEN_SECRET || "process.env.JWT_SECRETKEY");
 
     return res.status(code).cookie("meri-pratyaksha", token, {
         maxAge: 15 * 24 * 60 * 60 * 1000,

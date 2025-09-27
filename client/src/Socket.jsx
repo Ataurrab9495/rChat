@@ -9,11 +9,13 @@ const getSocket = () => useContext(SocketContext);
 
 const SocketProvider = ({ children }) => {
     const socket = useMemo(() => io(serverConnection, {
-        timeout: 30000, // 30 seconds
+        withCredentials: true,
+        transports: ['websocket', 'polling'],
+        timeout: 30000,
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,
-        withCredentials: true,
-        transports: ['websocket', 'polling']
+        reconnection: true,
+        forceNew: true
     }), []);
 
     useEffect(() => {
@@ -28,11 +30,16 @@ const SocketProvider = ({ children }) => {
         socket.on('connect_error', (error) => {
             console.error('Socket connection error:', error);
         });
+        
+        socket.on('reconnect', (attemptNumber) => {
+            console.log('Socket reconnected after', attemptNumber, 'attempts');
+        });
 
         return () => {
             socket.off('connect');
             socket.off('disconnect');
             socket.off('connect_error');
+            socket.off('reconnect');
         };
     }, [socket]);
 

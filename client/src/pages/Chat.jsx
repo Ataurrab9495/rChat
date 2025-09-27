@@ -1,14 +1,15 @@
 import { AttachFile as AttachFileIcon, Send as SendIcon } from '@mui/icons-material';
 import { IconButton, Skeleton, Stack } from '@mui/material';
+import { useSelector } from 'react-redux';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { NEW_MESSAGE } from '../constants/events';
 import AppLayout from '../components/Layout/AppLayout';
 import MessageComponent from '../components/shared/MessageComponent';
-import { InputBox } from '../components/styles/styledComponents';
+import { InputBox } from '../components/styles/StyledComponents';
 import { grayColor, orange } from '../constants/Color';
 import { useChatDetailsQuery } from '../Redux/api/api';
 import { getSocket } from '../Socket';
-import { useSocketEventHandler } from '../hooks/hooks';
+import { useErrors, useSocketEventHandler } from '../hooks/hooks';
 
 
 const Chat = ({ chatId }) => {
@@ -19,6 +20,9 @@ const Chat = ({ chatId }) => {
   const { user } = useSelector(state => state.auth);
 
   const chatDetails = useChatDetailsQuery({ chatId, skip: !chatId });
+  
+  useErrors([{ isError: chatDetails.isError, error: chatDetails.error }]);
+  
   const members = chatDetails.data?.chat?.members;
 
   const messageSubmitHandler = (e) => {
@@ -43,16 +47,15 @@ const Chat = ({ chatId }) => {
     setMessages((prev) => [...prev, data.message]);
   }, [chatId]);
 
-  useEffect(() => {
-    console.log("Setting up socket listeners");
-    
-    socket.on(NEW_MESSAGE, newMessageHandler);
+  const eventHandlers = {
+    [NEW_MESSAGE]: newMessageHandler,
+  };
 
-    return () => {
-      console.log("Cleaning up socket listeners");
-      socket.off(NEW_MESSAGE, newMessageHandler);
-    }
-  }, [socket, newMessageHandler]);
+  useSocketEventHandler(socket, eventHandlers);
+
+  useEffect(() => {
+    return () => setMessages([]);
+  }, [chatId]);
 
   return chatDetails.isLoading ? (
     <Skeleton />
@@ -71,7 +74,7 @@ const Chat = ({ chatId }) => {
         }}
       >
         {messages.map((i) => (
-          <MessageComponent key={i._id} message={i} user={user} />
+          <MessageComponent key={i._id || Math.random()} message={i} user={user} />
         ))}
       </Stack>
       <form

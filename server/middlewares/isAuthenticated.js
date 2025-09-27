@@ -9,7 +9,7 @@ const isAuthenticated = TryCatch(async (req, res, next) => {
 
     if (!token) return next(new ErrorHandler("Please login to access your profile.", 401));
 
-    const decode = jwt.verify(token, "process.env.JWT_SECRETKEY");
+    const decode = jwt.verify(token, process.env.JWT_TOKEN_SECRET || "process.env.JWT_SECRETKEY");
     req.user = decode._id;
     next();
 });
@@ -19,7 +19,7 @@ const isAdminAuthenticated = TryCatch(async (req, res, next) => {
 
     if (!token) return next(new ErrorHandler("Only Mr.Ataurrab has access to these routes.", 401));
 
-    const seckretkey = jwt.verify(token, "process.env.JWT_SECRETKEY");
+    const seckretkey = jwt.verify(token, process.env.JWT_TOKEN_SECRET || "process.env.JWT_SECRETKEY");
 
     const isMatched = seckretkey === AdminSeckey;
 
@@ -38,7 +38,7 @@ const socketAuthentication = async (err, socket, next) => {
 
         if (!authToken) return next(new ErrorHandler("Authentication failed.", 401));
 
-        const decode = jwt.verify(authToken, "process.env.JWT_SECRETKEY");
+        const decode = jwt.verify(authToken, process.env.JWT_TOKEN_SECRET || "process.env.JWT_SECRETKEY");
 
         const user = await User.findById(decode._id);
 
@@ -48,6 +48,7 @@ const socketAuthentication = async (err, socket, next) => {
 
         return next();
     } catch (error) {
+        console.error("Socket authentication error:", error);
         return next(new ErrorHandler("Authentication failed.", 401));
     }
 };
