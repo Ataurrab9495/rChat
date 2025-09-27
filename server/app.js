@@ -74,16 +74,24 @@ io.on("connection", (socket) => {
     socket.timeout(30000);
     const user = socket.user; // get user from socket auth
     
+    console.log(`User connected: ${user.name} (${user._id})`);
+    
     // const user = socket.handshake.auth.user; // get user from socket handshake auth
     userSocketIDs.set(user._id.toString(), socket.id); // store user socket id
-    //dconsole.log(userSocketIDs);
+    console.log(`Current connected users: ${userSocketIDs.size}`);
 
     // emit the user id to the client
     socket.on(NEW_MESSAGE, async ({ chatId, members, message }) => {
+        console.log(`Received NEW_MESSAGE from ${user.name}:`, { chatId, members, message });
+        
         // check if the chatId and members are provided
+        if (!chatId || !members || !message) {
+            console.log('Missing required fields:', { chatId, members, message });
+            return;
+        }
+
         const messageForRealTime = {
             content: message,
-            members,
             _id: uuid(),
             sender: {
                 _id: user._id,
@@ -99,63 +107,58 @@ io.on("connection", (socket) => {
             chat: chatId,
         }
 
+        
         const userSocket = getSocketUserId(members); // get socket ids of the members
-
-        // emit the message to the user who sent it
+        console.log('User sockets found:', userSocket);
+        console.log('Members to notify:', members);
+        
+        // emit the message to all members of the chat
         userSocket.forEach(socketId => {
-            if(!socketId){
+            if (!socketId) {
                 console.log('skip: socketId undefined for some member');
-                return;                
+                return;
             }
-
-            console.log(`emitting NEW_MESSAGE to socket ${socketId}`, { chatId, content: messageForRealTime.content });
-
-
-            io.to(userSocket).emit(NEW_MESSAGE, {
+            
+            console.log(messageForRealTime);
+            console.log(`emitting NEW_MESSAGE to socket ${socketId}`);
+            
+            
+            
+            io.to(socketId).emit(NEW_MESSAGE, {
                 chatId,
                 message: messageForRealTime,
-            }, (ack) => {
-               console.log("Message delivered to sender:", ack);
-               
             });
-        })
-
-         console.log(`Message broadcast to sockets: ${userSocket}`);
-         /* userSocket.forEach(socketId => {
-            const targetSocket = io.sockets.sockets.get(socketId);
-            if(targetSocket?.connected){
-                targetSocket.emit(NEW_MESSAGE, {
+            console.log("yes here is the issue:= ", io.to(socketId).emit(NEW_MESSAGE, {
                     chatId,
                     message: messageForRealTime,
-                }, (ack) => {
-                    console.log("Message delivered to sender:", ack);
-                })
-            }else{
-                console.log(`Socket with ID ${socketId} is not connected`);
+                }),
+                console.log('message hai yahan:- ',message)
                 
-            }
-         }) */
-         
+            );
+        });
+
+
+        console.log(`Message broadcast to sockets: ${userSocket.join(', ')}`);
 
         // emit alert to the user that a new message has been sent (Notification)
-        io.to(userSocket).emit(NEW_MESSAGE_ALERT, { chatId });
-
+        userSocket.forEach(socketId => {
+            if (socketId) {
+                io.to(socketId).emit(NEW_MESSAGE_ALERT, { chatId });
+            }
+        });
 
         try {
             await Message.create(messageForDB); // save the message to the database
+            console.log('Message saved to database successfully');
         } catch (error) {
-            console.log(`Error saving message to database: ${error.message}`);
+            console.error(`Error saving message to database: ${error.message}`);
         }
-
-
-        // emit the message to the other members of the chat
-        //console.log(messageForRealTime);
-
     });
 
     socket.on("disconnect", () => {
-        //console.log(`Socket disconnected: ${socket.id}`);
+        console.log(`Socket disconnected: ${socket.id}`);
         userSocketIDs.delete(user._id.toString()); // remove user socket id on disconnect
+        console.log(`Remaining connected users: ${userSocketIDs.size}`);
     })
 });
 
