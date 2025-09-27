@@ -10,7 +10,7 @@ import { Chat } from "../models/chat.js";
 
 // This function is used to create a new user
 // It takes the user details from the request body and creates a new user in the database
-const newUser = TryCatch(async (req, res) => {
+const newUser = TryCatch(async (req, res, next) => {
     const { name, username, password, bio } = req.body;
     const file = req.file;
 

@@ -9,7 +9,7 @@ const isAuthenticated = TryCatch(async (req, res, next) => {
 
     if (!token) return next(new ErrorHandler("Please login to access your profile.", 401));
 
-    const decode = jwt.verify(token, process.env.JWT_TOKEN_SECRET || "process.env.JWT_SECRETKEY");
+    const decode = jwt.verify(token, process.env.JWT_TOKEN_SECRET || "nowthisiscalledthegoodjwttokensecretbecauseihavewrittenthis");
     req.user = decode._id;
     next();
 });

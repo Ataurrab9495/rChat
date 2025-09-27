@@ -107,24 +107,36 @@ io.on("connection", (socket) => {
             chat: chatId,
         }
 
+        
         const userSocket = getSocketUserId(members); // get socket ids of the members
         console.log('User sockets found:', userSocket);
         console.log('Members to notify:', members);
-
+        
         // emit the message to all members of the chat
         userSocket.forEach(socketId => {
             if (!socketId) {
                 console.log('skip: socketId undefined for some member');
                 return;
             }
-
+            
+            console.log(messageForRealTime);
             console.log(`emitting NEW_MESSAGE to socket ${socketId}`);
+            
+            
             
             io.to(socketId).emit(NEW_MESSAGE, {
                 chatId,
                 message: messageForRealTime,
             });
+            console.log("yes here is the issue:= ", io.to(socketId).emit(NEW_MESSAGE, {
+                    chatId,
+                    message: messageForRealTime,
+                }),
+                console.log('message hai yahan:- ',message)
+                
+            );
         });
+
 
         console.log(`Message broadcast to sockets: ${userSocket.join(', ')}`);
 

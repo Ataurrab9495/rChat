@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { NEW_MESSAGE } from '../constants/events';
 import AppLayout from '../components/Layout/AppLayout';
 import MessageComponent from '../components/shared/MessageComponent';
-import { InputBox } from '../components/styles/StyledComponents';
+import { InputBox } from '../components/styles/styledComponents';
 import { grayColor, orange } from '../constants/Color';
 import { useChatDetailsQuery } from '../Redux/api/api';
 import { getSocket } from '../Socket';
@@ -29,7 +29,7 @@ const Chat = ({ chatId }) => {
     e.preventDefault();
     if (!message.trim()) return;
 
-    console.log("Emitting message:", { chatId, members, message });
+    //console.log("Emitting message:", { chatId, members, message });
     
     // Sending message to the server
     socket.emit(NEW_MESSAGE, { chatId, members, message });
